@@ -1,10 +1,13 @@
 //
 // Copyright(c) 2017 by Nobuo NAKAGAWA @ Polyphony Digital Inc.
 //
-// We're Hiring!
+// We"re Hiring!
 // http://www.polyphony.co.jp/recruit/
 //
 #include <cstdlib>
+#include <list>
+#include <map>
+#include <iostream>
 
 #if defined(WIN32)
 #include <GL/glut.h>
@@ -43,7 +46,7 @@ static const char* MODE_STRING[eModeMax] = {
 };
 
 static const float MODE_COMPLIANCE[eModeMax] = {
-  0.0f,            // Miles Macklin's blog (http://blog.mmacklin.com/2016/10/12/xpbd-slides-and-stiffness/)
+  0.0f,            // Miles Macklin"s blog (http://blog.mmacklin.com/2016/10/12/xpbd-slides-and-stiffness/)
   0.00000000004f, // 0.04 x 10^(-9) (M^2/N) Concrete
   0.00000000016f, // 0.16 x 10^(-9) (M^2/N) Wood
   0.000000001f,   // 1.0  x 10^(-8) (M^2/N) Leather
@@ -155,15 +158,15 @@ private:
   float     m_Radius;
 
 public:
-  CBall(float radius) :
+  CBall(float radius, float x, float y, float z) :
   m_Frequency(3.14f * 0.4f),
-  m_Position(0.0f,0.0f,0.0f),
+  m_Position(x, y, z),
   m_Radius(radius){}
 
   void Update(float dt){
-    m_Position.z = cos(m_Frequency) * 2.0f;
-    m_Frequency += dt / 5.0f;
-    if (m_Frequency > 3.14f * 2.0f){ m_Frequency -= 3.14f * 2.0f; }
+    // m_Position.z = cos(m_Frequency) * 2.0f;
+    // m_Frequency += dt / 5.0f;
+    // if (m_Frequency > 3.14f * 2.0f){ m_Frequency -= 3.14f * 2.0f; }
   }
 
   void Render(){
@@ -202,14 +205,14 @@ public:
     for(int w = 0; w < m_Width; w++){
       for(int h = 0; h < m_Height; h++){
         glm::vec3 pos( width  * ((float)w/(float)m_Width ) - width  * 0.5f,
-                      -height * ((float)h/(float)m_Height) + height * 0.5f,
-                       0.0f );
-        glm::vec3 gravity( 0.0f, -9.8f, 0.0f );
+                      0.3f,
+                      -height * ((float)h/(float)m_Height) + height * 0.5f);
+        glm::vec3 gravity( 0.0f, -0.8f, 0.0f );
         GLfloat inv_mass = 0.1f;
-        if ((h == 0) && (w == 0)          ||
-            (h == 0) && (w == m_Width - 1)) {
-          inv_mass = 0.0f; //fix only edge point
-        }
+        // if ((h == 0) && (w == 0)          ||
+        //     (h == 0) && (w == m_Width - 1)) {
+        //   inv_mass = 0.0f; //fix only edge point
+        // }
         m_Particles[ h * m_Width + w ] = CParticle(inv_mass, pos, gravity);
       }
     }
@@ -250,7 +253,7 @@ public:
     glEnd();
   }
 
-  void Update(CApplication& app, float dt, CBall* ball, int iteraion){
+  void Update(CApplication& app, float dt, std::list<CBall>& balls, int iteraion){
     std::vector<CParticle>::iterator particle;
     for(particle = m_Particles.begin(); particle != m_Particles.end(); particle++){
       (*particle).Update(dt); // predict position
@@ -261,12 +264,14 @@ public:
       (*constraint).LambdaInit();
     }
     for(int i = 0; i < iteraion; i++){
-      for(particle = m_Particles.begin(); particle != m_Particles.end(); particle++){
-        glm::vec3 vec    = (*particle).GetPosition() - ball->GetPosition();
-        float     length = glm::length(vec);
-        float     radius = ball->GetRadius() * 1.8f; // fake radius
-        if (length < radius) {
-          (*particle).AddPosition(glm::normalize(vec) * (radius - length));
+      for (CBall ball : balls) {
+        for(particle = m_Particles.begin(); particle != m_Particles.end(); particle++){
+          glm::vec3 vec    = (*particle).GetPosition() - ball.GetPosition();
+          float     length = glm::length(vec);
+          float     radius = ball.GetRadius() * 1.1; // fake radius
+          if (length < radius) {
+            (*particle).AddPosition(glm::normalize(vec) * (radius - length));
+          }
         }
       }
       unsigned int before = glutGet(GLUT_ELAPSED_TIME);
@@ -280,8 +285,36 @@ public:
 };
 
 CApplication g_Application;
-CCloth       g_Cloth(2.0f, 2.0f, 20, 20);
-CBall        g_Ball(0.1f);
+CCloth       g_Cloth(1.5f, 1.5f, 40, 40);
+std::list<CBall> g_Balls{ 
+  CBall(0.1, -0.00964272, 0.00487864, -0.00019705296),
+  CBall(0.08, 0.00054020714, -0.095394075, -0.0036351085),
+  CBall(0.100999996, 0.15198378, -0.22183715, -0.017068058),
+  CBall(0.0845, 0.07931688, -0.18869743, -0.011383),
+  CBall(0.068, 0.006649964, -0.1555577, -0.005697942),
+  CBall(0.100999996, -0.131352, -0.20754479, -0.043588962),
+  CBall(0.0845, -0.062351022, -0.18155125, -0.024643453),
+  CBall(0.093399994, 0.2420846, -0.21270585, -0.040538955),
+  CBall(0.0866, 0.33278927, -0.23020619, -0.059466075),
+  CBall(0.08, 0.42082617, -0.24719185, -0.07783651),
+  CBall(0.093399994, -0.21404074, -0.20185287, -0.055183973),
+  CBall(0.0866, -0.29637498, -0.22534016, -0.059819847),
+  CBall(0.08, -0.37628764, -0.24813664, -0.06431937),
+  CBall(0.07339999, 0.50924724, -0.25322366, -0.08937363),
+  CBall(0.066599995, 0.60034776, -0.25943828, -0.10126037),
+  CBall(0.06, 0.68876886, -0.2654701, -0.1127975),
+  CBall(0.07339999, -0.47129363, -0.2560258, -0.07179497),
+  CBall(0.066599995, -0.5691786, -0.26415402, -0.079497114),
+  CBall(0.06, -0.6641846, -0.2720432, -0.08697271),
+  CBall(0.105000004, 0.08969513, -0.3231805, -0.0020129606),
+  CBall(0.11, 0.09738652, -0.45480677, 0.02527158),
+  CBall(0.114999995, 0.1050779, -0.58643305, 0.05255612),
+  CBall(0.12, 0.11276928, -0.7180593, 0.07984066),
+  CBall(0.105000004, -0.066214666, -0.3246228, -0.009860255),
+  CBall(0.11, -0.07034518, -0.4660233, 0.023834959),
+  CBall(0.114999995, -0.07447569, -0.6074238, 0.057530172),
+  CBall(0.12, -0.07860621, -0.74882424, 0.091225386),
+};
 
 void render_string(std::string& str, int w, int h, int x0, int y0) {
   glDisable(GL_LIGHTING);
@@ -304,7 +337,12 @@ void render_string(std::string& str, int w, int h, int x0, int y0) {
 }
 
 void init(int argc, char* argv[]){
-  glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+  // for (const auto& [key, value] : pose_data) {
+  //   auto ball = CBall(0.15, value.at("z"), value.at("x"), value.at("y"));
+  //   g_Balls.push_back(ball);
+  // }
+
+  glClearColor(0.7f, 0.7f, 0.65f, 1.0f);
   glEnable(GL_CULL_FACE);
 
   GLfloat time = (float)glutGet(GLUT_ELAPSED_TIME) / 1000.0f;
@@ -324,10 +362,12 @@ void display(void){
     g_Cloth.Render();
   glPopMatrix();
 
-  glPushMatrix();
+  
+  for (CBall g_Ball : g_Balls) {
+    glPushMatrix();
     g_Ball.Render();
-  glPopMatrix();
-
+    glPopMatrix();
+  }
   glColor3d(1.0f, 1.0f, 1.0f);
   char debug[128];
   sprintf(debug, "ITERATION %d", g_Application.m_IterationNum);
@@ -362,7 +402,7 @@ void reshape(int width, int height){
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
 
-  gluLookAt(0.0f, 00.0f, 5.0f, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0); // pos, tgt, up
+  gluLookAt(0.0f, 0.0f, 5.0f, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0); // pos, tgt, up
 
   glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
   glLightfv(GL_LIGHT0, GL_DIFFUSE,  lightDiffuse);
@@ -375,9 +415,10 @@ void idle(void){
   GLfloat dt = time - g_Application.GetTime();
 
   dt = (dt > 0.033f) ? 0.033f : dt; // keep 30fps
-
-  g_Ball.Update(dt);
-  g_Cloth.Update(g_Application, dt, &g_Ball, g_Application.m_IterationNum);
+  // for (CBall g_Ball : g_Balls) {
+  //   g_Ball.Update(dt);
+  // }
+  g_Cloth.Update(g_Application, dt, g_Balls, g_Application.m_IterationNum);
 
   g_Application.SetTime(time);
   glutPostRedisplay();
@@ -425,6 +466,9 @@ int main(int argc, char* argv[]) {
   glutIdleFunc(idle);
   glutKeyboardFunc(keyboard);
   glutSpecialFunc(special);
+
+  g_Application.m_OldMode = g_Application.m_Mode;
+  g_Application.m_Mode += 7;
 
   glutMainLoop();
   return 0;
